@@ -177,7 +177,7 @@ func (s *Service) generateToken(userID int, tokenType TokenType) (string, string
 	// Get JWT secret from environment
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		return "", errors.New("JWT_SECRET not set")
+		return "", "", errors.New("JWT_SECRET not set")
 	}
 
 	// Sign and get the complete encoded token as a string
