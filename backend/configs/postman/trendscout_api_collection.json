@@ -1,0 +1,330 @@
+{
+  "info": {
+    "_postman_id": "b2e96c51-5d3f-4e7c-8e77-f5e3c9a6d4b3",
+    "name": "TrendScout API",
+    "description": "TrendScout アプリケーションのAPI一覧",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "auth_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "認証API",
+      "item": [
+        {
+          "name": "ユーザー登録",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"email\": \"test@example.com\",\n\t\"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "新規ユーザーを登録します"
+          },
+          "response": []
+        },
+        {
+          "name": "ログイン",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = JSON.parse(responseBody);",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.environment.set(\"auth_token\", jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"email\": \"admin@example.com\",\n\t\"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "認証してトークンを取得します"
+          },
+          "response": []
+        },
+        {
+          "name": "トークンリフレッシュ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = JSON.parse(responseBody);",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.environment.set(\"auth_token\", jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"refresh_token\": \"refresh_token_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "リフレッシュトークンを使用して新しいトークンを取得します"
+          },
+          "response": []
+        },
+        {
+          "name": "ログアウト",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "ログアウトしてトークンを無効化します"
+          },
+          "response": []
+        }
+      ],
+      "description": "認証関連のAPI"
+    },
+    {
+      "name": "キーワードAPI",
+      "item": [
+        {
+          "name": "キーワード一覧取得",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/keywords",
+              "host": ["{{base_url}}"],
+              "path": ["keywords"]
+            },
+            "description": "登録済みのキーワード一覧を取得します"
+          },
+          "response": []
+        },
+        {
+          "name": "キーワード作成",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"keyword\": \"fashion\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/keywords",
+              "host": ["{{base_url}}"],
+              "path": ["keywords"]
+            },
+            "description": "新しいキーワードを作成します"
+          },
+          "response": []
+        },
+        {
+          "name": "キーワード更新",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"keyword\": \"updated_fashion\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/keywords/1",
+              "host": ["{{base_url}}"],
+              "path": ["keywords", "1"]
+            },
+            "description": "既存のキーワードを更新します"
+          },
+          "response": []
+        },
+        {
+          "name": "キーワード削除",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/keywords/1",
+              "host": ["{{base_url}}"],
+              "path": ["keywords", "1"]
+            },
+            "description": "キーワードを削除します"
+          },
+          "response": []
+        }
+      ],
+      "description": "キーワード管理API"
+    },
+    {
+      "name": "トレンドAPI",
+      "item": [
+        {
+          "name": "トレンド一覧取得",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trends?keyword_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["trends"],
+              "query": [
+                {
+                  "key": "keyword_id",
+                  "value": "1",
+                  "description": "キーワードID"
+                }
+              ]
+            },
+            "description": "トレンドデータを取得します"
+          },
+          "response": []
+        },
+        {
+          "name": "トレンド予測",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"keyword_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/trends/predict",
+              "host": ["{{base_url}}"],
+              "path": ["trends", "predict"]
+            },
+            "description": "キーワードに基づいたトレンド予測を行います"
+          },
+          "response": []
+        },
+        {
+          "name": "センチメント分析",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"keyword_id\": 1,\n\t\"text\": \"This is a test text for sentiment analysis. Fashion trends are looking great!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/trends/sentiment",
+              "host": ["{{base_url}}"],
+              "path": ["trends", "sentiment"]
+            },
+            "description": "テキストのセンチメント分析を行います"
+          },
+          "response": []
+        }
+      ],
+      "description": "トレンド分析API"
+    }
+  ]
+}

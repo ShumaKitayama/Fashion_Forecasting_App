@@ -1,0 +1,5 @@
+.cursor
+AI_Memory
+.env
+.env.local
+node_modules
