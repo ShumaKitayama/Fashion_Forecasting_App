@@ -324,7 +324,7 @@ CREATE TABLE trend_records (
 開発段階から Docker コンテナでデータベースを起動し、バックエンド・フロントエンド両方から接続して利用する。
 
 ```plain
-TrendScout/
+Fashion_Forecasting_App/
 ├─ docker-compose.yml            # PostgreSQL, MongoDB, Redis, backend, frontend コンテナ定義
 ├─ backend/                       # バックエンドアプリ
 │   ├─ Dockerfile                 # Go + Gin アプリ用 Dockerfile
