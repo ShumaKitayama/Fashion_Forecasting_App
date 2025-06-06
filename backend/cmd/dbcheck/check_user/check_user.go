@@ -25,7 +25,7 @@ func Run() {
 	dbName := "trendscout"
 
 	// 接続文字列を作成
-	connString := fmt.Sprintf("postgres://%s:%s@%s:5432/%s", 
+	connString := fmt.Sprintf("postgres://%s:%s@%s:5432/%s",
 		dbUser, dbPassword, dbHost, dbName)
 
 	// データベースに接続
@@ -100,4 +100,4 @@ func Run() {
 	fmt.Println("\nバックエンドサーバー接続チェック...")
 	fmt.Println("バックエンドサーバーに接続するには以下を実行してください:")
 	fmt.Println("curl http://localhost:8080/")
-} 
+}

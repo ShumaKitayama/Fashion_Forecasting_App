@@ -25,7 +25,7 @@ func Run() {
 	dbName := "trendscout"
 
 	// 接続文字列を作成
-	connString := fmt.Sprintf("postgres://%s:%s@%s:5432/%s", 
+	connString := fmt.Sprintf("postgres://%s:%s@%s:5432/%s",
 		dbUser, dbPassword, dbHost, dbName)
 
 	// データベースに接続
@@ -118,8 +118,8 @@ func Run() {
 	}
 
 	// キーワードをテスト挿入
-	_, err = pgPool.Exec(ctx, 
-		"INSERT INTO keywords (user_id, keyword) VALUES ($1, $2) ON CONFLICT (user_id, keyword) DO NOTHING", 
+	_, err = pgPool.Exec(ctx,
+		"INSERT INTO keywords (user_id, keyword) VALUES ($1, $2) ON CONFLICT (user_id, keyword) DO NOTHING",
 		adminID, "test_keyword")
 	if err != nil {
 		log.Fatalf("キーワード挿入エラー: %v", err)
@@ -154,4 +154,4 @@ func Run() {
 	}
 
 	fmt.Printf("\n合計 %d 件のキーワードレコードが見つかりました\n", count)
-} 
+}
