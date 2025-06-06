@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/trendscout/backend/internal/models"
 )
 
@@ -28,7 +29,8 @@ const (
 
 // Claims represents the JWT claims
 type Claims struct {
-	UserID int `json:"user_id"`
+	UserID  int    `json:"user_id"`
+	TokenID string `json:"token_id,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -43,20 +45,20 @@ func NewService() *Service {
 // GenerateTokens generates a new access and refresh token pair
 func (s *Service) GenerateTokens(ctx context.Context, user *models.User) (accessToken string, refreshToken string, err error) {
 	// Generate access token
-	accessToken, err = s.generateToken(user.ID, AccessToken)
+	accessToken, _, err = s.generateToken(user.ID, AccessToken)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	// Generate refresh token
-	refreshToken, err = s.generateToken(user.ID, RefreshToken)
+	// Generate refresh token and ID
+	refreshToken, tokenID, err := s.generateToken(user.ID, RefreshToken)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	// Store refresh token in Redis keyed by user ID
+	// Store refresh token in Redis keyed by token ID
 	refreshExpiration := 7 * 24 * time.Hour // 7 days
-	redisKey := fmt.Sprintf("auth:refresh:%d", user.ID)
+	redisKey := fmt.Sprintf("auth:refresh:%s", tokenID)
 
 	err = models.SetWithTTL(ctx, redisKey, user.ID, refreshExpiration)
 	if err != nil {
@@ -96,7 +98,7 @@ func (s *Service) RefreshTokens(ctx context.Context, refreshToken string) (newAc
 	}
 
 	// Ensure refresh token exists in Redis (not logged out)
-	redisKey := fmt.Sprintf("auth:refresh:%d", claims.UserID)
+	redisKey := fmt.Sprintf("auth:refresh:%s", claims.TokenID)
 	exists, err := models.KeyExists(ctx, redisKey)
 	if err != nil {
 		return "", ErrInternalError
@@ -116,7 +118,7 @@ func (s *Service) RefreshTokens(ctx context.Context, refreshToken string) (newAc
 	}
 
 	// Generate new access token
-	accessToken, err := s.generateToken(user.ID, AccessToken)
+	accessToken, _, err := s.generateToken(user.ID, AccessToken)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate access token: %w", err)
 	}
@@ -133,7 +135,7 @@ func (s *Service) Logout(ctx context.Context, refreshToken string) error {
 	}
 
 	// Delete refresh token from Redis
-	redisKey := fmt.Sprintf("auth:refresh:%d", claims.UserID)
+	redisKey := fmt.Sprintf("auth:refresh:%s", claims.TokenID)
 	return models.Del(ctx, redisKey)
 }
 
@@ -147,19 +149,22 @@ func (s *Service) VerifyAccessToken(accessToken string) (int, error) {
 }
 
 // generateToken generates a JWT token
-func (s *Service) generateToken(userID int, tokenType TokenType) (string, error) {
+func (s *Service) generateToken(userID int, tokenType TokenType) (string, string, error) {
 	var expirationTime time.Time
+	var tokenID string
 
 	// Set expiration based on token type
 	if tokenType == AccessToken {
 		expirationTime = time.Now().Add(15 * time.Minute)
 	} else {
 		expirationTime = time.Now().Add(7 * 24 * time.Hour)
+		tokenID = uuid.NewString()
 	}
 
 	// Create claims
 	claims := &Claims{
-		UserID: userID,
+		UserID:  userID,
+		TokenID: tokenID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -176,7 +181,12 @@ func (s *Service) generateToken(userID int, tokenType TokenType) (string, error)
 	}
 
 	// Sign and get the complete encoded token as a string
-	return token.SignedString([]byte(jwtSecret))
+	signed, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", "", err
+	}
+
+	return signed, tokenID, nil
 }
 
 // verifyToken verifies a JWT token and returns the claims
@@ -206,6 +216,11 @@ func (s *Service) verifyToken(tokenString string, tokenType TokenType) (*Claims,
 	// Extract claims
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
+		return nil, ErrInvalidToken
+	}
+
+	// Basic type validation
+	if tokenType == RefreshToken && claims.TokenID == "" {
 		return nil, ErrInvalidToken
 	}
 
