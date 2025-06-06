@@ -42,9 +42,9 @@ func NewService() *Service {
 	)
 
 	// Set rate limiting
-	c.Limit(&colly.LimitRule{
-		// Set delay between requests (5-10秒)
-		RandomDelay: 5 * time.Second,
+       c.Limit(&colly.LimitRule{
+               // Set random delay up to 5 seconds
+               RandomDelay: 5 * time.Second,
 		// Parallelism
 		Parallelism: 2,
 	})
