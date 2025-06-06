@@ -26,7 +26,7 @@ func Run() {
 	dbName := "trendscout"
 
 	// 接続文字列を作成
-	connString := fmt.Sprintf("postgres://%s:%s@%s:5432/%s", 
+	connString := fmt.Sprintf("postgres://%s:%s@%s:5432/%s",
 		dbUser, dbPassword, dbHost, dbName)
 
 	// データベースに接続
@@ -54,7 +54,7 @@ func Run() {
 	var userID int
 	var email string
 	var passwordHash string
-	
+
 	err = pgPool.QueryRow(ctx, "SELECT id, email, password_hash FROM users WHERE email = 'admin@example.com'").Scan(&userID, &email, &passwordHash)
 	if err != nil {
 		log.Fatalf("管理者ユーザー検索エラー: %v", err)
@@ -98,4 +98,4 @@ func Run() {
 	log.Println("以下の認証情報でログインできるようになりました:")
 	log.Println("Email: admin@example.com")
 	log.Println("Password: password")
-} 
+}

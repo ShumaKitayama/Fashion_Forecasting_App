@@ -17,7 +17,7 @@ func main() {
 	}
 
 	command := os.Args[1]
-	
+
 	switch strings.ToLower(command) {
 	case "users":
 		check_user.Run()
@@ -36,4 +36,4 @@ func printUsage() {
 	fmt.Println("  users     - ユーザーテーブルを確認")
 	fmt.Println("  keywords  - キーワードテーブルを確認")
 	fmt.Println("  reset     - 管理者パスワードをリセット")
-} 
+}
