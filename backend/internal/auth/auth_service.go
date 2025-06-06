@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/trendscout/backend/internal/models"
 )
 
@@ -55,11 +54,10 @@ func (s *Service) GenerateTokens(ctx context.Context, user *models.User) (access
 		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	// Store refresh token in Redis
-	tokenID := uuid.New().String()
+	// Store refresh token in Redis keyed by user ID
 	refreshExpiration := 7 * 24 * time.Hour // 7 days
-	redisKey := fmt.Sprintf("auth:refresh:%s", tokenID)
-	
+	redisKey := fmt.Sprintf("auth:refresh:%d", user.ID)
+
 	err = models.SetWithTTL(ctx, redisKey, user.ID, refreshExpiration)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to store refresh token: %w", err)
@@ -95,6 +93,16 @@ func (s *Service) RefreshTokens(ctx context.Context, refreshToken string) (newAc
 	claims, err := s.verifyToken(refreshToken, RefreshToken)
 	if err != nil {
 		return "", err
+	}
+
+	// Ensure refresh token exists in Redis (not logged out)
+	redisKey := fmt.Sprintf("auth:refresh:%d", claims.UserID)
+	exists, err := models.KeyExists(ctx, redisKey)
+	if err != nil {
+		return "", ErrInternalError
+	}
+	if !exists {
+		return "", ErrInvalidToken
 	}
 
 	// Get user
@@ -141,7 +149,7 @@ func (s *Service) VerifyAccessToken(accessToken string) (int, error) {
 // generateToken generates a JWT token
 func (s *Service) generateToken(userID int, tokenType TokenType) (string, error) {
 	var expirationTime time.Time
-	
+
 	// Set expiration based on token type
 	if tokenType == AccessToken {
 		expirationTime = time.Now().Add(15 * time.Minute)
@@ -160,7 +168,7 @@ func (s *Service) generateToken(userID int, tokenType TokenType) (string, error)
 
 	// Create token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	
+
 	// Get JWT secret from environment
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -202,4 +210,4 @@ func (s *Service) verifyToken(tokenString string, tokenType TokenType) (*Claims,
 	}
 
 	return claims, nil
-} 
+}
