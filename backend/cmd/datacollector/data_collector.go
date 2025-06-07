@@ -1,5 +1,5 @@
-// backend/cmd/datacollector/main.go
-package main
+// backend/cmd/datacollector/data_collector.go
+package datacollector
 
 import (
 	"context"
@@ -21,6 +21,13 @@ func main() {
 	}
 
 	log.Println("データ収集を開始します...")
+	
+	// データベース接続を初期化
+	if err := models.InitDatabases(); err != nil {
+		log.Fatalf("データベース初期化エラー: %v", err)
+	}
+	defer models.CloseDatabases()
+	
 	ctx := context.Background()
 	
 	// キーワードリストを取得
@@ -76,4 +83,4 @@ func main() {
 	}
 	
 	log.Println("データ収集が完了しました")
-}
+} 

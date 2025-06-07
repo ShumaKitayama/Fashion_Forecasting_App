@@ -1,4 +1,4 @@
-package main
+package dbcheck
 
 import (
 	"fmt"
@@ -36,4 +36,4 @@ func printUsage() {
 	fmt.Println("  users     - ユーザーテーブルを確認")
 	fmt.Println("  keywords  - キーワードテーブルを確認")
 	fmt.Println("  reset     - 管理者パスワードをリセット")
-}
+} 

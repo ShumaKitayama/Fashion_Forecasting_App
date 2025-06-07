@@ -1,4 +1,4 @@
-package main
+package visualizer
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 func main() {
 	// コマンドライン引数からキーワードIDを取得
 	if len(os.Args) < 2 {
-		log.Fatal("使用法: visualize <keyword_id>")
+		log.Fatal("使用法: trend_visualizer <keyword_id>")
 	}
 	
 	keywordID, err := strconv.Atoi(os.Args[1])
@@ -71,4 +71,4 @@ func main() {
 	fmt.Println("========================")
 	fmt.Println("注: HTML形式のグラフを生成するには go-echarts パッケージをインストールしてください")
 	fmt.Println("go get github.com/go-echarts/go-echarts/v2")
-}
+} 
