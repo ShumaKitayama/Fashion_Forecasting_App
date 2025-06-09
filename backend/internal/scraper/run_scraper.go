@@ -32,20 +32,17 @@ func RunScrapeTest(keyword string) error {
 		return fmt.Errorf("failed to check existing keyword: %w", err)
 	}
 
-	var userID int
 	if existingKeyword != nil {
 		fmt.Printf("Using existing keyword: %s (ID: %d)\n", existingKeyword.Keyword, existingKeyword.ID)
-		userID = existingKeyword.UserID
 	} else {
 		// テスト用ユーザーを作成（または既存のテストユーザーを検索）
 		testUser, err := models.CreateTestUser(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create test user: %w", err)
 		}
-		userID = testUser.ID
 
 		// キーワードを作成
-		keywordObj, err := models.CreateKeyword(ctx, userID, keyword)
+		keywordObj, err := models.CreateKeyword(ctx, testUser.ID, keyword)
 		if err != nil {
 			return fmt.Errorf("failed to create keyword: %w", err)
 		}

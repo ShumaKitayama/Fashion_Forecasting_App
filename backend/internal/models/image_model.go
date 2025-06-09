@@ -176,4 +176,35 @@ func DeleteImage(ctx context.Context, id primitive.ObjectID) error {
 	}
 
 	return nil
+}
+
+// GetImagesByKeywordAndDateRange retrieves images for a keyword within a date range
+func GetImagesByKeywordAndDateRange(ctx context.Context, keywordID int, startDate, endDate time.Time) ([]Image, error) {
+	filter := bson.M{
+		"keyword_id": keywordID,
+		"fetched_at": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{primitive.E{Key: "fetched_at", Value: -1}})
+
+	cursor, err := imagesCollection().Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var images []Image
+	for cursor.Next(ctx) {
+		var image Image
+		if err := cursor.Decode(&image); err != nil {
+			continue // Skip invalid documents
+		}
+		images = append(images, image)
+	}
+
+	return images, cursor.Err()
 } 

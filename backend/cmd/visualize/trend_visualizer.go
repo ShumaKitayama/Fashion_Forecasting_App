@@ -56,7 +56,7 @@ func main() {
 	
 	// 実績データ
 	for _, r := range records {
-		fmt.Printf("%s | %d\n", r.RecordDate.Format("2006-01-02"), r.Volume)
+		fmt.Printf("%s | %d\n", r.Date.Format("2006-01-02"), r.Volume)
 	}
 	
 	// 予測データ

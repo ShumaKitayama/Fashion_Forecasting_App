@@ -125,19 +125,21 @@ func (c *AuthController) Refresh(ctx *gin.Context) {
 	})
 }
 
+// LogoutRequest represents the request body for logout
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
 // Logout handles user logout
 func (c *AuthController) Logout(ctx *gin.Context) {
-	authHeader := ctx.GetHeader("Authorization")
-	if authHeader == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Authorization header required"})
+	var req LogoutRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Extract token
-	tokenParts := authHeader[7:] // Remove "Bearer " prefix
 	
-	// Invalidate token
-	if err := c.authService.Logout(ctx, tokenParts); err != nil {
+	// Invalidate refresh token
+	if err := c.authService.Logout(ctx, req.RefreshToken); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to logout"})
 		return
 	}

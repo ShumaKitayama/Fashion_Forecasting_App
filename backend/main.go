@@ -9,92 +9,89 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-
 	"github.com/trendscout/backend/internal/controllers"
 	"github.com/trendscout/backend/internal/models"
+	"github.com/trendscout/backend/internal/scheduler"
 )
 
 func main() {
-	// 環境変数の読み込み
+	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: .env file not found, using environment variables")
+		log.Printf("No .env file found: %v", err)
 	}
 
-	// データベース接続の初期化
+	// Initialize databases
 	if err := models.InitDatabases(); err != nil {
 		log.Fatalf("Failed to initialize databases: %v", err)
 	}
 	defer models.CloseDatabases()
 
-	// Redis接続の初期化
+	// Initialize Redis
 	if err := models.InitRedis(); err != nil {
 		log.Fatalf("Failed to initialize Redis: %v", err)
 	}
 	defer models.CloseRedis()
 
-	// Ginエンジンのセットアップ
-	r := setupRouter()
+	// Initialize Gin router
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
 
-	// ルーター設定
-	controllers.RegisterRoutes(r)
+	// Add CORS middleware
+	router.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 
-	// サーバーの起動
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
 
-	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
-	}
+		c.Next()
+	})
 
-	// サーバーを非同期で起動
+	// Setup routes
+	controllers.SetupRoutes(router)
+
+	// Initialize and start the scheduler
+	sched := scheduler.NewService()
 	go func() {
-		log.Printf("Server starting on port %s", port)
+		sched.Start()
+	}()
+
+	// Setup server
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Println("🚀 Server starting on port 8080...")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
-	// シグナル処理によるグレースフルシャットダウン
+	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down server...")
 
+	// Gracefully shutdown the server
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	// Stop the scheduler
+	sched.Stop()
+
+	// Shutdown the server
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		log.Printf("Server forced to shutdown: %v", err)
 	}
 
 	log.Println("Server exiting")
-}
-
-func setupRouter() *gin.Engine {
-	// Ginエンジンの初期化
-	r := gin.Default()
-
-	// CORSミドルウェアの設定
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-
-	// ルートルートのハンドラー
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "TrendScout API is running!",
-		})
-	})
-
-	return r
 } 
