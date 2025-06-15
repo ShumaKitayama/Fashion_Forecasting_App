@@ -24,25 +24,32 @@ ChartJS.register(
 );
 
 interface PredictionChartProps {
-  data: PredictionData[];
+  data: PredictionData[] | null | undefined;
   loading: boolean;
 }
 
 const PredictionChart: React.FC<PredictionChartProps> = ({ data, loading }) => {
-  // データが空の場合
+  // ローディング状態の場合
   if (loading) {
     return (
-      <div className="chart-loading">
-        <div className="spinner"></div>
-        <p>予測チャートを読み込み中...</p>
+      <div className="chart-loading flex flex-col items-center justify-center py-8">
+        <div className="spinner w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-400">
+          将来予測チャートを読み込み中...
+        </p>
       </div>
     );
   }
 
-  if (data.length === 0) {
+  // dataのnullチェックを追加
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="chart-empty">
-        <p>予測データがありません</p>
+      <div className="chart-empty text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="mb-4">📈</div>
+        <p className="text-lg">予測データがありません</p>
+        <p className="text-sm mt-2">
+          「将来予測実行」ボタンをクリックして予測を生成してください
+        </p>
       </div>
     );
   }
@@ -63,7 +70,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ data, loading }) => {
     }),
     datasets: [
       {
-        label: "予測ボリューム",
+        label: "予測される話題量",
         data: sortedData.map((prediction) => prediction.volume),
         borderColor: "rgb(153, 102, 255)",
         backgroundColor: "rgba(153, 102, 255, 0.2)",
@@ -93,7 +100,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ data, loading }) => {
         display: true,
         title: {
           display: true,
-          text: "予測ボリューム",
+          text: "予測される話題量",
         },
         beginAtZero: true,
       },
@@ -104,12 +111,12 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ data, loading }) => {
       },
       title: {
         display: true,
-        text: "トレンド予測",
+        text: "人気度の将来予測",
       },
       tooltip: {
         callbacks: {
           label: function (context: any) {
-            return `予測ボリューム: ${context.parsed.y}`;
+            return `予測される話題量: ${context.parsed.y}`;
           },
           afterLabel: function () {
             return "※ これは予測値です";
@@ -132,7 +139,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ data, loading }) => {
           <span className="value">{data.length}日間</span>
         </div>
         <div className="summary-item">
-          <span className="label">平均予測値:</span>
+          <span className="label">平均予測話題量:</span>
           <span className="value">
             {Math.round(
               data.reduce((sum, prediction) => sum + prediction.volume, 0) /
@@ -141,13 +148,13 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ data, loading }) => {
           </span>
         </div>
         <div className="summary-item">
-          <span className="label">最大予測値:</span>
+          <span className="label">最大予測話題量:</span>
           <span className="value">
             {Math.max(...data.map((p) => p.volume))}
           </span>
         </div>
         <div className="summary-item">
-          <span className="label">最小予測値:</span>
+          <span className="label">最小予測話題量:</span>
           <span className="value">
             {Math.min(...data.map((p) => p.volume))}
           </span>

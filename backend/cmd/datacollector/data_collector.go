@@ -1,4 +1,3 @@
-// backend/cmd/datacollector/data_collector.go
 package datacollector
 
 import (

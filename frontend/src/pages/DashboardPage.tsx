@@ -113,29 +113,54 @@ const DashboardPage: React.FC = () => {
   };
 
   const loadPredictions = async () => {
-    if (!selectedKeyword) return;
+    if (!selectedKeyword) {
+      console.warn("No keyword selected for prediction");
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
+      console.log("Requesting prediction for:", {
+        keyword_id: selectedKeyword.id,
+        days: predictionHorizon,
+      });
+
       const response = await trendService.predictTrend({
         keyword_id: selectedKeyword.id,
         days: predictionHorizon,
       });
 
-      setPredictions(response.predictions);
+      console.log("Prediction response:", response);
+      setPredictions(response.predictions || []);
     } catch (err: any) {
-      setError("予測データの読み込みに失敗しました");
-      console.error("Load predictions error:", err);
+      console.error("Load predictions error:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        keyword_id: selectedKeyword?.id,
+        days: predictionHorizon,
+      });
+
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "予測データの読み込みに失敗しました";
+      setError(`将来予測エラー: ${errorMessage}`);
+
+      // エラーが発生した場合は空配列に設定
+      setPredictions([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleKeywordSelect = (keyword: Keyword) => {
+    console.log("Keyword selected:", keyword);
     setSelectedKeyword(keyword);
-    setPredictions([]); // 予測データをクリア
+    setPredictions([]); // 予測データを空配列でクリア
+    setError(null); // エラーもクリア
   };
 
   const handleKeywordUpdate = () => {
@@ -152,28 +177,28 @@ const DashboardPage: React.FC = () => {
 
   const stats = [
     {
-      name: "総キーワード数",
+      name: "登録キーワード数",
       value: keywords.length,
       icon: TrendingUp,
       change: "+12%",
       changeType: "positive" as const,
     },
     {
-      name: "アクティブ分析",
+      name: "分析中のキーワード",
       value: selectedKeyword ? 1 : 0,
       icon: Activity,
       change: "",
       changeType: "neutral" as const,
     },
     {
-      name: "データポイント",
+      name: "収集データ数",
       value: trendData.length,
       icon: BarChart3,
       change: "+5%",
       changeType: "positive" as const,
     },
     {
-      name: "予測精度",
+      name: "予測の信頼度",
       value: "94%",
       icon: PieChart,
       change: "+2%",
@@ -337,7 +362,7 @@ const DashboardPage: React.FC = () => {
             {/* Tab Navigation */}
             <Card className="glass backdrop-blur-md border-white/20 dark:border-white/10">
               <CardContent className="p-6">
-                <div className="flex space-x-1 bg-muted/50 rounded-lg p-1">
+                <div className="flex space-x-1 bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
                   {[
                     { id: "analysis", label: "個別分析", icon: BarChart3 },
                     { id: "comparison", label: "比較分析", icon: Activity },
@@ -349,10 +374,10 @@ const DashboardPage: React.FC = () => {
                       onClick={() =>
                         setActiveTab(tab.id as "analysis" | "comparison")
                       }
-                      className={`flex-1 ${
+                      className={`flex-1 transition-all duration-200 ${
                         activeTab === tab.id
-                          ? "bg-white dark:bg-slate-800 shadow-sm"
-                          : "hover:bg-white/50 dark:hover:bg-slate-700/50"
+                          ? "bg-white dark:bg-slate-800 shadow-sm text-gray-900 dark:text-white border-gray-200 dark:border-slate-600"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-slate-600 hover:text-gray-900 dark:hover:text-white"
                       }`}
                     >
                       <tab.icon className="w-4 h-4 mr-2" />
@@ -427,7 +452,7 @@ const DashboardPage: React.FC = () => {
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium">
-                            予測期間: {predictionHorizon}日
+                            将来予測期間: {predictionHorizon}日
                           </label>
                           <Input
                             type="range"
@@ -464,7 +489,7 @@ const DashboardPage: React.FC = () => {
                             ) : (
                               <TrendingUp className="w-4 h-4 mr-2" />
                             )}
-                            予測生成
+                            将来予測実行
                           </Button>
                         </div>
                       </div>
@@ -478,7 +503,7 @@ const DashboardPage: React.FC = () => {
                       <CardHeader>
                         <CardTitle className="flex items-center space-x-2">
                           <BarChart3 className="w-5 h-5" />
-                          <span>トレンドデータ</span>
+                          <span>人気度データ</span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -497,47 +522,45 @@ const DashboardPage: React.FC = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Prediction Chart */}
-                    {predictions.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                      >
-                        <Card className="glass backdrop-blur-md border-white/20 dark:border-white/10">
-                          <CardHeader>
-                            <CardTitle className="flex items-center space-x-2">
-                              <TrendingUp className="w-5 h-5" />
-                              <span>予測データ</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <PredictionChart
-                              data={predictions}
-                              loading={loading}
-                            />
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    )}
-
                     {/* Sentiment Analysis */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
+                    {selectedKeyword && (
                       <Card className="glass backdrop-blur-md border-white/20 dark:border-white/10">
                         <CardHeader>
                           <CardTitle className="flex items-center space-x-2">
                             <PieChart className="w-5 h-5" />
-                            <span>センチメント分析</span>
+                            <span>評判・印象分析</span>
                           </CardTitle>
+                          <CardDescription>
+                            「{selectedKeyword.keyword}」に対する一般的な評価
+                          </CardDescription>
                         </CardHeader>
                         <CardContent>
                           <SentimentAnalysis keyword={selectedKeyword} />
                         </CardContent>
                       </Card>
-                    </motion.div>
+                    )}
+
+                    {/* Prediction Chart */}
+                    {selectedKeyword && predictions.length > 0 && (
+                      <Card className="glass backdrop-blur-md border-white/20 dark:border-white/10">
+                        <CardHeader>
+                          <CardTitle className="flex items-center space-x-2">
+                            <TrendingUp className="w-5 h-5" />
+                            <span>将来予測</span>
+                          </CardTitle>
+                          <CardDescription>
+                            「{selectedKeyword.keyword}」の{predictionHorizon}
+                            日後まで
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <PredictionChart
+                            data={predictions}
+                            loading={loading}
+                          />
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 </motion.div>
               ) : (

@@ -3,6 +3,9 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import trendService, { SentimentResponse } from "../services/trend_service";
 import { Keyword } from "../services/keyword_service";
+import { Input } from "./ui/Input";
+import { Button } from "./ui/Button";
+import { Calendar } from "lucide-react";
 
 // Chart.jsのコンポーネントを登録
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -66,7 +69,7 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ keyword }) => {
   // チャート用のデータを準備
   const chartData = sentimentData
     ? {
-        labels: ["ポジティブ", "ニュートラル", "ネガティブ"],
+        labels: ["好意的", "普通", "否定的"],
         datasets: [
           {
             data: [
@@ -94,7 +97,7 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ keyword }) => {
       },
       title: {
         display: true,
-        text: `${keyword.keyword} のセンチメント分析`,
+        text: `${keyword.keyword} の評判・印象分析`,
       },
       tooltip: {
         callbacks: {
@@ -107,96 +110,123 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ keyword }) => {
   };
 
   return (
-    <div className="sentiment-analysis">
-      <div className="sentiment-header">
-        <h3>センチメント分析</h3>
+    <div className="sentiment-analysis bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+      <div className="sentiment-header mb-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+          <Calendar className="w-5 h-5" />
+          <span>評判・印象分析</span>
+        </h3>
       </div>
 
       {/* 日付選択とロードボタン */}
-      <div className="sentiment-controls">
-        <label>
-          分析日:
-          <input
+      <div className="sentiment-controls mb-6 flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex-1 space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            分析日:
+          </label>
+          <Input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             max={new Date().toISOString().split("T")[0]}
+            className="w-full"
           />
-        </label>
-        <button onClick={loadSentimentData} disabled={loading || !selectedDate}>
+        </div>
+        <Button
+          onClick={loadSentimentData}
+          disabled={loading || !selectedDate}
+          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+        >
           {loading ? "分析中..." : "分析実行"}
-        </button>
+        </Button>
       </div>
 
       {/* エラー表示 */}
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+          {error}
+        </div>
+      )}
 
       {/* ローディング表示 */}
       {loading && (
-        <div className="sentiment-loading">
-          <div className="spinner"></div>
-          <p>センチメント分析を実行中...</p>
+        <div className="sentiment-loading flex flex-col items-center justify-center py-8">
+          <div className="spinner w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">
+            評判・印象を分析中...
+          </p>
         </div>
       )}
 
       {/* センチメントデータ表示 */}
       {sentimentData && !loading && (
-        <div className="sentiment-results">
+        <div className="sentiment-results space-y-6">
           {/* ドーナツチャート */}
-          <div className="sentiment-chart">
+          <div className="sentiment-chart bg-white dark:bg-slate-700 p-6 rounded-lg border border-gray-200 dark:border-slate-600">
             {chartData && <Doughnut data={chartData} options={chartOptions} />}
           </div>
 
           {/* 詳細データ */}
-          <div className="sentiment-details">
-            <div className="sentiment-item positive">
-              <div className="sentiment-label">
-                <span className="sentiment-icon">😊</span>
-                <span>ポジティブ</span>
+          <div className="sentiment-details grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="sentiment-item bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="sentiment-label flex items-center space-x-2 mb-2">
+                <span className="sentiment-icon text-2xl">😊</span>
+                <span className="font-medium text-green-800 dark:text-green-300">
+                  好意的
+                </span>
               </div>
-              <div className="sentiment-value">
+              <div className="sentiment-value text-2xl font-bold text-green-600 dark:text-green-400">
                 {(sentimentData.positive * 100).toFixed(1)}%
               </div>
             </div>
 
-            <div className="sentiment-item neutral">
-              <div className="sentiment-label">
-                <span className="sentiment-icon">😐</span>
-                <span>ニュートラル</span>
+            <div className="sentiment-item bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="sentiment-label flex items-center space-x-2 mb-2">
+                <span className="sentiment-icon text-2xl">😐</span>
+                <span className="font-medium text-gray-800 dark:text-gray-300">
+                  普通
+                </span>
               </div>
-              <div className="sentiment-value">
+              <div className="sentiment-value text-2xl font-bold text-gray-600 dark:text-gray-400">
                 {(sentimentData.neutral * 100).toFixed(1)}%
               </div>
             </div>
 
-            <div className="sentiment-item negative">
-              <div className="sentiment-label">
-                <span className="sentiment-icon">😔</span>
-                <span>ネガティブ</span>
+            <div className="sentiment-item bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="sentiment-label flex items-center space-x-2 mb-2">
+                <span className="sentiment-icon text-2xl">😔</span>
+                <span className="font-medium text-red-800 dark:text-red-300">
+                  否定的
+                </span>
               </div>
-              <div className="sentiment-value">
+              <div className="sentiment-value text-2xl font-bold text-red-600 dark:text-red-400">
                 {(sentimentData.negative * 100).toFixed(1)}%
               </div>
             </div>
           </div>
 
           {/* 分析サマリー */}
-          <div className="sentiment-summary">
-            <h4>分析サマリー</h4>
-            <p>
-              {selectedDate}における「{keyword.keyword}
-              」のセンチメント分析結果です。
+          <div className="sentiment-summary bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-3">
+              分析結果
+            </h4>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              {selectedDate}における「
+              <strong className="text-purple-600 dark:text-purple-400">
+                {keyword.keyword}
+              </strong>
+              」の評判・印象分析結果です。
               {sentimentData.positive > 0.5 ? (
-                <span className="summary-positive">
-                  全体的にポジティブな反応が多く見られます。
+                <span className="summary-positive text-green-600 dark:text-green-400 font-medium">
+                  全体的に好意的な反応が多く見られます。
                 </span>
               ) : sentimentData.negative > 0.5 ? (
-                <span className="summary-negative">
-                  ネガティブな反応が多く見られます。
+                <span className="summary-negative text-red-600 dark:text-red-400 font-medium">
+                  否定的な反応が多く見られます。
                 </span>
               ) : (
-                <span className="summary-neutral">
-                  ニュートラルな反応が中心的です。
+                <span className="summary-neutral text-gray-600 dark:text-gray-400 font-medium">
+                  普通の反応が中心的です。
                 </span>
               )}
             </p>
@@ -206,8 +236,11 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ keyword }) => {
 
       {/* データがない場合の表示 */}
       {!sentimentData && !loading && !error && (
-        <div className="sentiment-empty">
-          <p>日付を選択して「分析実行」ボタンをクリックしてください。</p>
+        <div className="sentiment-empty text-center py-12 text-gray-500 dark:text-gray-400">
+          <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">
+            日付を選択して「分析実行」ボタンをクリックしてください。
+          </p>
         </div>
       )}
     </div>
